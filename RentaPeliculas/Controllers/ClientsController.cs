@@ -2,11 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using RentaPeliculas.Data;
 using RentaPeliculas.Data.Entities;
+using RentaPeliculas.DTO;
 
 namespace RentaPeliculas.Controllers
 {
@@ -15,15 +17,20 @@ namespace RentaPeliculas.Controllers
         //INYECCION DE DEPENDENCIAS
         private readonly RentaPeli _context;
 
-        public ClientsController(RentaPeli context)
+        private readonly IMapper mapper;
+
+        public ClientsController(RentaPeli context, IMapper mapper)
         {
             _context = context;
+            this.mapper = mapper;
         }
 
         // GET: Clients
         public async Task<IActionResult> Index()
         {
-            return View(await _context.Clientes.ToListAsync());
+            var data = await _context.Clientes.ToListAsync();
+            var listClientes = data.Select(x => mapper.Map<ClienteDTO>(x)).ToList();
+            return View(listClientes);
         }
 
         // GET: Clients/Details/5
@@ -40,8 +47,8 @@ namespace RentaPeliculas.Controllers
             {
                 return NotFound();
             }
-
-            return View(client);
+            var clienteDTO = mapper.Map<ClienteDTO>(client);
+            return View(clienteDTO);
         }
 
         // GET: Clients/Create
@@ -55,15 +62,17 @@ namespace RentaPeliculas.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("ID,LastName,FirstName,Telephone,Direction")] Client client)
+        public async Task<IActionResult> Create([Bind("ID,LastName,FirstName,Telephone,Direction")] ClienteDTO clienteDTO)
         {
+            var client = mapper.Map<Client>(clienteDTO);
+
             if (ModelState.IsValid)
             {
                 _context.Add(client);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            return View(client);
+            return View(clienteDTO);
         }
 
         // GET: Clients/Edit/5
@@ -79,7 +88,9 @@ namespace RentaPeliculas.Controllers
             {
                 return NotFound();
             }
-            return View(client);
+
+            var clienteDTO = mapper.Map<ClienteDTO>(client);
+            return View(clienteDTO);
         }
 
         // POST: Clients/Edit/5
@@ -87,8 +98,10 @@ namespace RentaPeliculas.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("ID,LastName,FirstName,Telephone,Direction")] Client client)
+        public async Task<IActionResult> Edit(int id, [Bind("ID,LastName,FirstName,Telephone,Direction")] ClienteDTO clienteDTO)
         {
+            var client = mapper.Map<Client>(clienteDTO);
+
             if (id != client.ID)
             {
                 return NotFound();
@@ -114,7 +127,7 @@ namespace RentaPeliculas.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
-            return View(client);
+            return View(clienteDTO);
         }
 
         // GET: Clients/Delete/5

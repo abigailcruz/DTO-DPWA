@@ -2,28 +2,33 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using RentaPeliculas.Data;
 using RentaPeliculas.Data.Entities;
+using RentaPeliculas.DTO;
 
 namespace RentaPeliculas.Controllers
 {
     public class Prestamoes1Controller : Controller
     {
         private readonly RentaPeli _context;
+        private readonly IMapper mapper;
 
-        public Prestamoes1Controller(RentaPeli context)
+        public Prestamoes1Controller(RentaPeli context, IMapper mapper)
         {
             _context = context;
+            this.mapper = mapper;
         }
 
         // GET: Prestamoes1
         public async Task<IActionResult> Index()
         {
-            var rentaPeli = _context.Prestamos.Include(p => p.Client).Include(p => p.Pelicula);
-            return View(await rentaPeli.ToListAsync());
+            var data = await _context.Prestamos.Include(p => p.Client).Include(p => p.Pelicula).ToListAsync();
+            var listClientes = data.Select(x => mapper.Map<PrestamoDTO>(x)).ToList();
+            return View(listClientes);
         }
 
         // GET: Prestamoes1/Details/5
@@ -43,7 +48,9 @@ namespace RentaPeliculas.Controllers
                 return NotFound();
             }
 
-            return View(prestamo);
+            var prestamoDTO = mapper.Map<PrestamoDTO>(prestamo);
+
+            return View(prestamoDTO);
         }
 
         // GET: Prestamoes1/Create
@@ -59,17 +66,19 @@ namespace RentaPeliculas.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("PrestamoID,FechaPrestamo,FechaDevolucion,ClientID,PeliculaID")] Prestamo prestamo)
+        public async Task<IActionResult> Create([Bind("PrestamoID,FechaPrestamo,FechaDevolucion,ClientID,PeliculaID")] PrestamoDTO prestamoDTO)
         {
+            var prestamo = mapper.Map<Prestamo>(prestamoDTO);
             if (ModelState.IsValid)
             {
                 _context.Add(prestamo);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["ClientID"] = new SelectList(_context.Clientes, "ID", "ID", prestamo.ClientID);
-            ViewData["PeliculaID"] = new SelectList(_context.Peliculas, "PeliculaID", "PeliculaID", prestamo.PeliculaID);
-            return View(prestamo);
+            ViewData["ClientID"] = new SelectList(_context.Clientes, "ID", "ID", prestamoDTO.ClientID);
+            ViewData["PeliculaID"] = new SelectList(_context.Peliculas, "PeliculaID", "PeliculaID", prestamoDTO.PeliculaID);
+
+            return View(prestamoDTO);
         }
 
         // GET: Prestamoes1/Edit/5
@@ -87,7 +96,9 @@ namespace RentaPeliculas.Controllers
             }
             ViewData["ClientID"] = new SelectList(_context.Clientes, "ID", "ID", prestamo.ClientID);
             ViewData["PeliculaID"] = new SelectList(_context.Peliculas, "PeliculaID", "PeliculaID", prestamo.PeliculaID);
-            return View(prestamo);
+
+            var prestamoDTO = mapper.Map<PrestamoDTO>(prestamo);
+            return View(prestamoDTO);
         }
 
         // POST: Prestamoes1/Edit/5
@@ -95,8 +106,10 @@ namespace RentaPeliculas.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("PrestamoID,FechaPrestamo,FechaDevolucion,ClientID,PeliculaID")] Prestamo prestamo)
+        public async Task<IActionResult> Edit(int id, [Bind("PrestamoID,FechaPrestamo,FechaDevolucion,ClientID,PeliculaID")] PrestamoDTO prestamoDTO)
         {
+            var prestamo = mapper.Map<Prestamo>(prestamoDTO);
+
             if (id != prestamo.PrestamoID)
             {
                 return NotFound();
@@ -124,7 +137,7 @@ namespace RentaPeliculas.Controllers
             }
             ViewData["ClientID"] = new SelectList(_context.Clientes, "ID", "ID", prestamo.ClientID);
             ViewData["PeliculaID"] = new SelectList(_context.Peliculas, "PeliculaID", "PeliculaID", prestamo.PeliculaID);
-            return View(prestamo);
+            return View(prestamoDTO);
         }
 
         // GET: Prestamoes1/Delete/5
